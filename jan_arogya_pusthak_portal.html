@@ -1,0 +1,1460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jan Arogya Pusthak (JAP) - Health Portal</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        /* Custom scrollbar for timeline design */
+        .timeline-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .timeline-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .timeline-scroll::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased">
+
+    <!-- TOP HEADER BAR -->
+    <header class="bg-emerald-700 text-white shadow-md sticky top-0 z-30 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+            <!-- Brand -->
+            <div class="flex items-center gap-3">
+                <div class="bg-white text-emerald-700 p-2 rounded-lg font-bold text-xl shadow-inner flex items-center justify-center">
+                    🩺 JAP
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight tracking-wide flex items-center gap-2">
+                        <span>Jan Arogya Pusthak</span>
+                        <span class="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded-full uppercase font-semibold">MVP</span>
+                    </h1>
+                    <p class="text-xs text-emerald-100">National Unified Digital Health Ledger System</p>
+                </div>
+            </div>
+
+            <!-- Global Action Controls (Language & Current Role Switcher) -->
+            <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-end">
+                <!-- Language Picker -->
+                <div class="flex bg-emerald-800 rounded-lg p-0.5 text-xs border border-emerald-600">
+                    <button onclick="setLanguage('en')" id="lang-en" class="px-2.5 py-1 rounded bg-white text-emerald-800 font-semibold transition">EN</button>
+                    <button onclick="setLanguage('ta')" id="lang-ta" class="px-2.5 py-1 rounded text-emerald-200 hover:text-white transition">தமிழ்</button>
+                    <button onclick="setLanguage('hi')" id="lang-hi" class="px-2.5 py-1 rounded text-emerald-200 hover:text-white transition">हिंदी</button>
+                </div>
+
+                <!-- Provider Quick Selector -->
+                <div class="bg-emerald-900 px-3 py-1.5 rounded-lg border border-emerald-700 text-xs flex items-center gap-2">
+                    <span class="text-emerald-300 font-medium" data-i18n="acting-as">Acting as:</span>
+                    <select id="roleSelector" onchange="changeProviderRole(this.value)" class="bg-transparent text-white font-bold focus:outline-none cursor-pointer">
+                        <option class="text-slate-800 font-sans" value="doctor">Dr. Rajesh Kumar (Doctor)</option>
+                        <option class="text-slate-800 font-sans" value="nurse">Nurse Lakshmi (Nurse)</option>
+                        <option class="text-slate-800 font-sans" value="lab">Priya Devi (Lab Tech)</option>
+                    </select>
+                </div>
+
+                <!-- Log out / Reset button (Only shown when patient is authenticated) -->
+                <button id="logoutBtn" onclick="exitPatientSession()" class="hidden bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs transition flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                    <span data-i18n="exit">Exit Record</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN APP CONTENT GRID -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 flex flex-col relative">
+
+        <!-- NOTIFICATION BANNER / MOCK STATUS SYSTEM -->
+        <div id="toastNotification" class="hidden fixed top-20 right-4 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 transition-transform duration-300 transform translate-y-10 border border-slate-700">
+            <span id="toastIcon">💡</span>
+            <span id="toastMessage" class="text-sm font-medium">Notification description</span>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- SCREEN 1 & 2: LOGIN / AUTHENTICATION PAGE -->
+        <!-- ========================================== -->
+        <section id="authSection" class="flex-grow flex flex-col lg:flex-row gap-6 items-stretch justify-center my-auto py-4">
+            
+            <!-- Left Info Panel & Recent Patients List -->
+            <div class="lg:w-5/12 bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col justify-between">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900 mb-2" data-i18n="auth-title">JAP Provider Ecosystem</h2>
+                    <p class="text-slate-600 text-sm mb-6" data-i18n="auth-desc">Secure, instantly auditable, and completely paperless health ledger portal. Instantly retrieve history, record critical consultations, vitals, or labs, and dispatch key SMS updates securely.</p>
+                    
+                    <div class="space-y-4 mb-6">
+                        <div class="flex gap-3 items-start">
+                            <span class="p-2 bg-emerald-50 rounded-lg text-emerald-600 text-sm">🔒</span>
+                            <div>
+                                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500" data-i18n="security-rule">100% Secure Consent</h4>
+                                <p class="text-xs text-slate-600" data-i18n="security-rule-desc">Every ledger access is logged in a permanent blockchain-inspired consent trail requiring Patient PIN verification.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-3 items-start">
+                            <span class="p-2 bg-emerald-50 rounded-lg text-emerald-600 text-sm">📲</span>
+                            <div>
+                                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500" data-i18n="sms-rule">Explicit SMS Dispatch Only</h4>
+                                <p class="text-xs text-slate-600" data-i18n="sms-rule-desc">No automatic messaging. Patient receives SMS alerts only when specifically requested and authorized by you.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Patients List (For testing convenience) -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-xs font-bold uppercase text-slate-500 tracking-wider flex items-center gap-1">
+                            <span>👥</span> <span data-i18n="recent-patients">Recent Active Patients</span>
+                        </h3>
+                        <span class="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full" data-i18n="demo-click">Demo Quick-Fill</span>
+                    </div>
+                    <div class="space-y-2" id="recentPatientsList">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Authenticator Form -->
+            <div class="lg:w-6/12 bg-white rounded-2xl p-6 shadow-lg border-2 border-emerald-500 flex flex-col justify-between relative overflow-hidden">
+                <!-- Aadhaar Scan Camera Simulation Overlay -->
+                <div id="cameraOverlay" class="hidden absolute inset-0 bg-slate-900 bg-opacity-95 z-40 flex flex-col justify-between p-6">
+                    <div class="flex justify-between items-center text-white">
+                        <h4 class="font-bold flex items-center gap-2">
+                            <span class="animate-pulse w-2 h-2 rounded-full bg-rose-500"></span>
+                            <span data-i18n="scanning-camera">Simulating Aadhaar QR Scan...</span>
+                        </h4>
+                        <button onclick="toggleCamera(false)" class="text-slate-400 hover:text-white text-sm bg-slate-800 px-3 py-1.5 rounded-lg">Cancel</button>
+                    </div>
+
+                    <!-- Holographic Scan Area -->
+                    <div class="my-auto mx-auto w-72 h-44 border-2 border-emerald-400 rounded-xl relative flex flex-col items-center justify-center overflow-hidden">
+                        <!-- Laser line animation -->
+                        <div class="absolute w-full h-1 bg-emerald-400 opacity-80 left-0 animate-[bounce_3s_infinite]"></div>
+                        <!-- Mask mock icon -->
+                        <svg class="w-16 h-16 text-emerald-400 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+                    </div>
+
+                    <div class="text-center text-slate-300 text-xs">
+                        <p data-i18n="hold-card">Align patient card inside scanner frame.</p>
+                        <p class="text-[10px] text-slate-500 mt-1">Camera authorization granted for local scanning.</p>
+                    </div>
+                </div>
+
+                <div>
+                    <!-- Section Title -->
+                    <div class="mb-5 border-b border-slate-100 pb-4">
+                        <span class="text-xs font-bold text-emerald-600 tracking-widest uppercase" data-i18n="step-1">STEP 1 - SECURE AUTHENTICATION</span>
+                        <h3 class="text-lg font-bold text-slate-800" data-i18n="search-desc">Open Patient Digital Health Ledger</h3>
+                    </div>
+
+                    <!-- Aadhaar Scan Box (UPI Style Action Area) -->
+                    <button onclick="triggerCameraScan()" class="w-full mb-5 bg-gradient-to-br from-emerald-50 to-slate-50 border-2 border-dashed border-emerald-300 hover:border-emerald-500 p-5 rounded-xl transition flex flex-col items-center justify-center gap-2 group">
+                        <div class="w-12 h-12 rounded-full bg-emerald-100 group-hover:bg-emerald-200 text-emerald-700 flex items-center justify-center transition">
+                            📷
+                        </div>
+                        <span class="font-bold text-emerald-800 text-sm" data-i18n="scan-aadhaar-btn">📷 Scan Aadhaar Card QR Code</span>
+                        <span class="text-slate-500 text-xs text-center" data-i18n="scan-subtext">Instantly extracts security token & patient details via secure local OCR.</span>
+                    </button>
+
+                    <div class="relative flex items-center justify-center my-4">
+                        <div class="border-t border-slate-200 w-full"></div>
+                        <span class="absolute bg-white px-3 text-xs text-slate-400 font-semibold" data-i18n="or">OR MANUAL ENTRY</span>
+                    </div>
+
+                    <!-- Manual Entry Card/Aadhaar Form -->
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1" data-i18n="enter-id">Enter Aadhaar ID</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">💳</span>
+                                <input id="aadhaarInput" type="text" placeholder="XXXX-XXXX-8901 (Masked format)" 
+                                    class="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition font-mono tracking-wider">
+                            </div>
+                        </div>
+
+                        <!-- Patient PIN Entry Field -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="block text-xs font-bold uppercase text-slate-500" data-i18n="patient-pin">Patient PIN</label>
+                                <span class="text-[10px] text-rose-500 font-semibold" id="pinAttemptsWarning"></span>
+                            </div>
+                            <div class="relative">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">🔒</span>
+                                <input id="pinInput" type="password" maxlength="4" placeholder="4-digit secure patient PIN" 
+                                    class="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition tracking-[0.5em] font-mono">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Access Button & Error Panel -->
+                <div class="mt-6 border-t border-slate-100 pt-4">
+                    <div id="authErrorPanel" class="hidden bg-rose-50 border border-rose-200 text-rose-700 text-xs px-3 py-2 rounded-lg mb-3 font-medium flex items-start gap-2">
+                        <span>⚠️</span>
+                        <span id="authErrorMsg">Invalid Credentials</span>
+                    </div>
+
+                    <button onclick="attemptAuthentication()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2 shadow-sm">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                        <span data-i18n="access-btn">Access Health Record</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ========================================== -->
+        <!-- SCREEN 3: MAIN TIMELINE & DRAWER (AUTHENTICATED) -->
+        <!-- ========================================== -->
+        <section id="patientTimelineSection" class="hidden flex-grow grid grid-cols-1 lg:grid-cols-12 gap-4 my-2">
+            
+            <!-- Left Panel: Profile Quick Peek (Mobile Responsive header card) -->
+            <div class="lg:col-span-3 flex flex-col gap-4">
+                
+                <!-- Profile Header Card -->
+                <div class="bg-gradient-to-b from-slate-900 to-slate-800 text-white rounded-2xl p-5 shadow-sm relative overflow-hidden flex flex-col justify-between min-h-[220px]">
+                    <div class="absolute -right-10 -bottom-10 opacity-10 text-emerald-200">
+                        <svg class="w-44 h-44" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                    </div>
+
+                    <div class="z-10">
+                        <div class="flex justify-between items-start">
+                            <span class="text-[10px] bg-emerald-500 text-white font-bold px-2.5 py-0.5 rounded-full" data-i18n="active-ledger">Active Ledger</span>
+                            <button onclick="toggleDetailsDrawer(true)" class="text-white hover:text-emerald-300 transition p-1 bg-slate-800 rounded-full flex items-center justify-center">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            </button>
+                        </div>
+
+                        <!-- Demographics Info -->
+                        <div class="mt-4">
+                            <h2 id="patientName" class="text-xl font-bold tracking-wide">Priya Sharma</h2>
+                            <p class="text-slate-300 text-xs flex items-center gap-2 mt-1">
+                                <span id="patientAgeGender">34 Yrs • Female</span>
+                                <span>•</span>
+                                <span id="patientBloodGroup" class="text-rose-400 font-bold">O+</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="z-10 pt-4 border-t border-slate-700/50 space-y-1.5">
+                        <div class="flex justify-between text-[11px] text-slate-400">
+                            <span data-i18n="mob-masked">Masked Mobile:</span>
+                            <span id="patientMobile" class="font-mono font-medium text-slate-200">XXXXXX7840</span>
+                        </div>
+                        <div class="flex justify-between text-[11px] text-slate-400">
+                            <span data-i18n="abha">ABHA Card ID:</span>
+                            <span id="patientABHA" class="font-mono font-medium text-slate-200">91-2384-9281-02</span>
+                        </div>
+                        <div class="flex justify-between text-[11px] text-slate-400">
+                            <span data-i18n="last-visit">Last Visit Date:</span>
+                            <span id="patientLastVisit" class="font-medium text-slate-200">12-May-2026</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation Sidebar & Portal Information -->
+                <div class="hidden lg:flex flex-col bg-white rounded-2xl p-4 shadow-sm border border-slate-200 gap-2">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 px-1" data-i18n="nav-title">Audit Log System</h4>
+                    <button onclick="openTab('timeline')" id="tabBtn-timeline" class="tab-btn w-full text-left py-2 px-3 rounded-lg text-sm font-semibold flex items-center justify-between bg-emerald-50 text-emerald-800">
+                        <span class="flex items-center gap-2">💬 Timeline View</span>
+                        <span class="bg-emerald-100 text-emerald-800 text-xs px-1.5 py-0.5 rounded" id="timelineCount">0</span>
+                    </button>
+                    <button onclick="openTab('audit')" id="tabBtn-audit" class="tab-btn w-full text-left py-2 px-3 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 flex items-center justify-between">
+                        <span class="flex items-center gap-2">📋 System Audit Trail</span>
+                        <span class="bg-slate-100 text-slate-600 text-xs px-1.5 py-0.5 rounded" id="auditCount">0</span>
+                    </button>
+                    <button onclick="openTab('consent')" id="tabBtn-consent" class="tab-btn w-full text-left py-2 px-3 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 flex items-center justify-between">
+                        <span class="flex items-center gap-2">📝 Patient Consent Logs</span>
+                        <span class="bg-slate-100 text-slate-600 text-xs px-1.5 py-0.5 rounded" id="consentCount">0</span>
+                    </button>
+                </div>
+
+                <!-- Quick Help Tip -->
+                <div class="bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl p-4 text-xs">
+                    <h5 class="font-bold flex items-center gap-1.5 mb-1 text-amber-800">
+                        <span>💡</span>
+                        <span data-i18n="quick-tip">MVP Tip for Reviewers</span>
+                    </h5>
+                    <p data-i18n="tip-text">Change your clinician role at the top right header at any time to instantly write as a Doctor, Nurse, or Lab Technician.</p>
+                </div>
+            </div>
+
+            <!-- Right Panel: Chronological Ledger (Main View area like WhatsApp Chat) -->
+            <div class="lg:col-span-9 flex flex-col gap-3 min-h-[500px]">
+
+                <!-- TAB 1: TIMELINE VIEW -->
+                <div id="tabContent-timeline" class="tab-content flex-grow flex flex-col justify-between bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <!-- Chat Header with Active Filter -->
+                    <div class="bg-slate-50 border-b border-slate-100 px-4 py-3 flex justify-between items-center flex-wrap gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                            <span class="font-bold text-slate-800 text-sm" data-i18n="chat-header">Official Medical Event History</span>
+                        </div>
+                        <!-- Filter chips -->
+                        <div class="flex gap-1.5 text-xs">
+                            <button onclick="filterTimeline('all')" id="filter-all" class="px-2.5 py-1 rounded-full bg-slate-200 font-bold text-slate-700 transition">All</button>
+                            <button onclick="filterTimeline('Doctor')" id="filter-doc" class="px-2.5 py-1 rounded-full text-slate-500 hover:bg-slate-100 transition">Doctors</button>
+                            <button onclick="filterTimeline('Nurse')" id="filter-nurse" class="px-2.5 py-1 rounded-full text-slate-500 hover:bg-slate-100 transition">Nurses</button>
+                            <button onclick="filterTimeline('Lab Technician')" id="filter-lab" class="px-2.5 py-1 rounded-full text-slate-500 hover:bg-slate-100 transition">Labs</button>
+                        </div>
+                    </div>
+
+                    <!-- Chat Message Area (Chronological Stream) -->
+                    <div id="timelineContainer" class="flex-grow p-4 space-y-4 overflow-y-auto max-h-[420px] timeline-scroll bg-slate-100">
+                        <!-- Messages dynamically added by JavaScript -->
+                    </div>
+
+                    <!-- WhatsApp-like Fixed Bottom Entry Composer -->
+                    <div class="border-t border-slate-200 p-4 bg-white">
+                        <form id="newEntryForm" onsubmit="handleNewEntrySubmit(event)" class="space-y-3">
+                            <!-- Provider Display Alert -->
+                            <div class="flex items-center justify-between text-xs bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 text-slate-600">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-emerald-600">🖋️</span>
+                                    <span>Writing as: <strong id="composerProviderName" class="text-slate-800"></strong></span>
+                                </div>
+                                <span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold text-[10px]" id="composerProviderRole"></span>
+                            </div>
+
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <!-- Type Selector -->
+                                <div class="sm:w-1/4">
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1" data-i18n="entry-type">Event Type</label>
+                                    <select id="entryType" class="w-full text-xs font-semibold bg-slate-50 border border-slate-300 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition">
+                                        <option value="Consultation">🩺 Consultation Note</option>
+                                        <option value="Prescription">💊 Prescription</option>
+                                        <option value="Vitals">📊 Vital Metrics</option>
+                                        <option value="Lab Result">🧪 Lab Result</option>
+                                        <option value="Scan Report">🩻 Scan Report</option>
+                                        <option value="General Note">📝 General Note</option>
+                                    </select>
+                                </div>
+
+                                <!-- Free-text Message Area -->
+                                <div class="sm:w-3/4 flex flex-col">
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1" data-i18n="free-text">Write Entry Details</label>
+                                    <div class="flex gap-2">
+                                        <textarea id="entryText" required placeholder="Type clinical diagnosis, prescribed medication, sugar levels, or scan feedback..." 
+                                            rows="1" class="flex-grow text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition resize-none"></textarea>
+                                        
+                                        <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg px-4 flex items-center justify-center transition shadow-sm">
+                                            <svg class="w-4 h-4 transform rotate-45" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" /></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- TAB 2: SYSTEM AUDIT TRAIL -->
+                <div id="tabContent-audit" class="tab-content hidden flex-grow bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden p-5">
+                    <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-sm">System Audit Trail</h3>
+                            <p class="text-xs text-slate-500">Unmodifiable and permanent trace log of all ledger additions during this session.</p>
+                        </div>
+                        <span class="text-[10px] bg-slate-800 text-white font-bold px-2 py-0.5 rounded uppercase">IMMUTABLE LOG</span>
+                    </div>
+
+                    <div class="overflow-x-auto text-xs">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold">
+                                    <th class="p-2.5">Timestamp</th>
+                                    <th class="p-2.5">User Details</th>
+                                    <th class="p-2.5">Event Action</th>
+                                    <th class="p-2.5">Target Patient Identifier</th>
+                                </tr>
+                            </thead>
+                            <tbody id="auditTrailBody" class="divide-y divide-slate-100">
+                                <!-- Appended dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TAB 3: PATIENT CONSENT LOG -->
+                <div id="tabContent-consent" class="tab-content hidden flex-grow bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden p-5">
+                    <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-sm">Patient Consent & Access logs</h3>
+                            <p class="text-xs text-slate-500">Explicit authorizations registered to access health data, verified via patient security PIN.</p>
+                        </div>
+                        <span class="text-[10px] bg-emerald-800 text-white font-bold px-2 py-0.5 rounded uppercase">VERIFIED BY PIN</span>
+                    </div>
+
+                    <div class="overflow-x-auto text-xs">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold">
+                                    <th class="p-2.5">Timestamp</th>
+                                    <th class="p-2.5">Requesting Clinician</th>
+                                    <th class="p-2.5">Authentication Token Type</th>
+                                    <th class="p-2.5">Consent Authorization Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="consentTrailBody" class="divide-y divide-slate-100">
+                                <!-- Appended dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+
+    <!-- ========================================== -->
+    <!-- SLIDE-IN DRAWER: PATIENT DETAILS PANEL -->
+    <!-- ========================================== -->
+    <div id="detailsDrawer" class="fixed inset-0 z-50 overflow-hidden hidden" aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-slate-900 bg-opacity-75 transition-opacity" onclick="toggleDetailsDrawer(false)"></div>
+
+        <div class="absolute inset-y-0 right-0 max-w-full flex pl-10">
+            <div class="w-screen max-w-md bg-white shadow-2xl flex flex-col divide-y divide-slate-200">
+                <!-- Header -->
+                <div class="px-5 py-4 bg-slate-900 text-white flex items-center justify-between">
+                    <div>
+                        <h2 class="text-base font-bold" data-i18n="drawer-title">Patient Profile Information</h2>
+                        <p class="text-xs text-slate-300">Complete clinical ledger demographics.</p>
+                    </div>
+                    <button onclick="toggleDetailsDrawer(false)" class="text-slate-400 hover:text-white transition">
+                        ✕ Close
+                    </button>
+                </div>
+
+                <!-- Body (Scrollable Information Categories) -->
+                <div class="flex-grow overflow-y-auto p-5 space-y-6">
+                    <!-- Demographic Metadata -->
+                    <div>
+                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Basic Demographics</h3>
+                        <div class="grid grid-cols-2 gap-3 text-xs bg-slate-50 p-3 rounded-xl border border-slate-200">
+                            <div>
+                                <span class="text-slate-500 block">DOB / Age:</span>
+                                <strong id="drawerDOB" class="text-slate-800">14-Sep-1992</strong>
+                            </div>
+                            <div>
+                                <span class="text-slate-500 block">Gender:</span>
+                                <strong id="drawerGender" class="text-slate-800">Female</strong>
+                            </div>
+                            <div class="col-span-2 border-t border-slate-200 pt-2 mt-1">
+                                <span class="text-slate-500 block">Residential Address:</span>
+                                <strong id="drawerAddress" class="text-slate-800">Flat 4B, Nehru Nagar Main Road, Madurai, Tamil Nadu - 625001</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Medical Metadata -->
+                    <div class="space-y-4">
+                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Clinical Metadata</h3>
+                        
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-slate-500">Blood Group:</span>
+                                <span id="drawerBloodGroup" class="bg-rose-100 text-rose-800 font-bold px-2 py-0.5 rounded">O+</span>
+                            </div>
+
+                            <div class="text-xs">
+                                <span class="text-slate-500 block mb-1">Known Allergies:</span>
+                                <div id="drawerAllergies" class="flex flex-wrap gap-1">
+                                    <!-- Populated dynamically -->
+                                </div>
+                            </div>
+
+                            <div class="text-xs">
+                                <span class="text-slate-500 block mb-1">Chronic Conditions:</span>
+                                <div id="drawerChronics" class="flex flex-wrap gap-1">
+                                    <!-- Populated dynamically -->
+                                </div>
+                            </div>
+
+                            <div class="text-xs">
+                                <span class="text-slate-500 block mb-1">Current Active Medications:</span>
+                                <ul id="drawerMeds" class="list-disc list-inside space-y-1 text-slate-700 bg-emerald-50/50 p-2.5 rounded-lg border border-emerald-100">
+                                    <!-- Populated dynamically -->
+                                </ul>
+                            </div>
+
+                            <div class="text-xs">
+                                <span class="text-slate-500 block mb-1">Past Surgeries / Procedures:</span>
+                                <p id="drawerSurgeries" class="text-slate-700 font-medium"></p>
+                            </div>
+
+                            <div class="text-xs">
+                                <span class="text-slate-500 block mb-1">Emergency Contact:</span>
+                                <div class="bg-slate-50 p-2 rounded border border-slate-200 flex justify-between items-center">
+                                    <span id="drawerEmergencyName" class="font-medium">Suresh Sharma (Spouse)</span>
+                                    <span id="drawerEmergencyPhone" class="font-mono text-[11px] text-slate-600">XXXXXX4412</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- MODAL CONFIRMATION: TRIGGER SMS OVERLAY -->
+    <!-- ========================================== -->
+    <div id="smsConfirmationModal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-modal="true" role="dialog">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-slate-900 bg-opacity-75 transition-opacity" onclick="toggleSMSModal(false)"></div>
+
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="relative bg-white rounded-2xl max-w-md w-full shadow-2xl p-6 border-2 border-emerald-500 animate-[fadeIn_0.2s_ease-out]">
+                
+                <!-- Icon Header -->
+                <div class="w-12 h-12 bg-emerald-100 rounded-full text-emerald-700 flex items-center justify-center text-xl mb-4">
+                    📨
+                </div>
+
+                <h3 class="text-lg font-bold text-slate-900 mb-2">Send Clinical Note to Patient?</h3>
+                <p class="text-slate-600 text-xs mb-4">Confirming this dispatch will instantly build an official encrypted text alert, forwarding the exact summary of the entry directly to the patient's registered mobile device.</p>
+
+                <!-- SMS Payload Preview -->
+                <div class="bg-slate-100 rounded-xl p-3 border border-slate-200 mb-5 relative">
+                    <span class="absolute top-2 right-3 text-[10px] text-slate-400 uppercase font-bold">SMS Payload View</span>
+                    <div class="text-[11px] text-slate-800 font-mono space-y-1 pt-4 leading-relaxed" id="smsPreviewPayload">
+                        <!-- Filled dynamically -->
+                    </div>
+                </div>
+
+                <!-- Footer Decisions -->
+                <div class="flex gap-2.5">
+                    <button onclick="toggleSMSModal(false)" class="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl transition text-xs">
+                        Cancel Note
+                    </button>
+                    <button onclick="confirmAndSendSMS()" class="w-1/2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl transition text-xs flex items-center justify-center gap-1.5 shadow-md">
+                        <span>📲 Dispatch SMS</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- HIGH FIDELITY POPUP: SIMULATED MOBILE PHONE RECIEVING SMS -->
+    <!-- ========================================== -->
+    <div id="mobileSMSPopup" class="fixed bottom-6 right-6 z-50 max-w-sm w-80 bg-slate-900 text-white rounded-2xl shadow-2xl border-4 border-slate-800 overflow-hidden hidden animate-[bounce_0.8s_ease-out_1]">
+        <!-- Phone Top Bar -->
+        <div class="bg-slate-800 px-3 py-1.5 flex justify-between items-center text-[10px] text-slate-400 font-semibold font-mono">
+            <span>🔴 BSNL Mobile</span>
+            <div class="flex items-center gap-2">
+                <span>📶 4G</span>
+                <span>🔋 89%</span>
+            </div>
+        </div>
+
+        <!-- Notification Banner Style Header -->
+        <div class="p-3 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+            <div class="flex items-center gap-2">
+                <span class="p-1 bg-emerald-600 text-white text-[10px] font-bold rounded">JAP</span>
+                <div>
+                    <h4 class="text-xs font-bold text-slate-100">JAP Health Ledger</h4>
+                    <span class="text-[9px] text-slate-400">Received Just Now</span>
+                </div>
+            </div>
+            <button onclick="toggleMobileSMSPopup(false)" class="text-slate-400 hover:text-white text-xs">✕</button>
+        </div>
+
+        <!-- Phone Screen Container / Message Bubbles -->
+        <div class="p-4 bg-slate-950 min-h-[160px] flex flex-col justify-end">
+            <div class="bg-slate-900 rounded-2xl rounded-tl-none p-3 border border-slate-800 text-xs text-slate-300">
+                <p id="smsMobileBody" class="font-mono text-[11px] whitespace-pre-wrap leading-relaxed">
+                    <!-- Text inserted dynamically -->
+                </p>
+            </div>
+        </div>
+
+        <!-- Phone Navigation bar (Simulated) -->
+        <div class="bg-slate-900 py-2 flex justify-center items-center">
+            <div class="w-24 h-1 bg-slate-600 rounded-full"></div>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- SYSTEM LOCKOUT COVER SCREEN -->
+    <!-- ========================================== -->
+    <div id="lockoutCover" class="hidden fixed inset-0 z-50 bg-rose-950 bg-opacity-95 flex flex-col items-center justify-center p-6 text-white text-center">
+        <div class="w-24 h-24 bg-rose-900 rounded-full text-rose-500 flex items-center justify-center text-4xl mb-6 shadow-inner border-2 border-rose-600 animate-pulse">
+            🔒
+        </div>
+        <h1 class="text-2xl font-bold mb-2">SYSTEM ACCESS LOCKED</h1>
+        <p class="text-rose-200 text-sm max-w-md mb-6">You have typed an incorrect Patient Authentication PIN 3 consecutive times. For safety and compliance, security keys have been reset and this ledger access is suspended.</p>
+        <button onclick="resetSecurityLockout()" class="bg-white text-rose-950 font-bold px-6 py-2.5 rounded-xl text-xs hover:bg-slate-100 transition shadow-lg">
+            Restart Authentication Portal
+        </button>
+    </div>
+
+
+    <!-- FOOTER LICENSE BLOCK -->
+    <footer class="bg-slate-900 text-slate-400 py-6 px-4 mt-auto border-t border-slate-800">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-xs">
+            <div>
+                <p class="font-semibold text-slate-300">© 2026 Jan Arogya Pusthak (JAP)</p>
+                <p class="text-[10px] mt-0.5">Unified health ledger standard for National Primary & Secondary Health networks.</p>
+            </div>
+            <div class="flex gap-4">
+                <a href="#authSection" class="hover:text-white transition">Privacy Policy</a>
+                <a href="#authSection" class="hover:text-white transition">Ledger Protocol Specifications</a>
+                <a href="#authSection" class="hover:text-white transition">Developer API Guidelines</a>
+            </div>
+        </div>
+    </footer>
+
+
+    <!-- ========================================== -->
+    <!-- FRONTEND APP LOGIC (SINGLE REUSABLE COMPONENT STATE) -->
+    <!-- ========================================== -->
+    <script>
+        // Dictionary for Multilingual Localization
+        const i18n = {
+            en: {
+                "acting-as": "Acting as:",
+                "exit": "Exit Record",
+                "auth-title": "JAP Provider Ecosystem",
+                "auth-desc": "Secure, instantly auditable, and completely paperless health ledger portal. Instantly retrieve history, record critical consultations, vitals, or labs, and dispatch key SMS updates securely.",
+                "security-rule": "100% Secure Consent",
+                "security-rule-desc": "Every ledger access is logged in a permanent blockchain-inspired consent trail requiring Patient PIN verification.",
+                "sms-rule": "Explicit SMS Dispatch Only",
+                "sms-rule-desc": "No automatic messaging. Patient receives SMS alerts only when specifically requested and authorized by you.",
+                "recent-patients": "Recent Active Patients",
+                "demo-click": "Demo Quick-Fill",
+                "scanning-camera": "Simulating Aadhaar QR Scan...",
+                "hold-card": "Align patient card inside scanner frame.",
+                "step-1": "STEP 1 - SECURE AUTHENTICATION",
+                "search-desc": "Open Patient Digital Health Ledger",
+                "scan-aadhaar-btn": "📷 Scan Aadhaar Card QR Code",
+                "scan-subtext": "Instantly extracts security token & patient details via secure local OCR.",
+                "or": "OR MANUAL ENTRY",
+                "enter-id": "Enter Aadhaar ID",
+                "patient-pin": "Patient PIN",
+                "access-btn": "Access Health Record",
+                "active-ledger": "Active Ledger",
+                "mob-masked": "Masked Mobile:",
+                "abha": "ABHA Card ID:",
+                "last-visit": "Last Visit Date:",
+                "nav-title": "Audit Log System",
+                "quick-tip": "MVP Tip for Reviewers",
+                "tip-text": "Change your clinician role at the top right header at any time to instantly write as a Doctor, Nurse, or Lab Technician.",
+                "chat-header": "Official Medical Event History",
+                "entry-type": "Event Type",
+                "free-text": "Write Entry Details",
+                "drawer-title": "Patient Profile Information"
+            },
+            ta: {
+                "acting-as": "செயல்படும் நபர்:",
+                "exit": "பதிவிலிருந்து வெளியேறு",
+                "auth-title": "ஜே.ஏ.பி மருத்துவர் & செவிலியர் போர்டல்",
+                "auth-desc": "பாதுகாப்பான, உடனடியாக தணிக்கை செய்யக்கூடிய, காகிதமற்ற சுகாதார லெட்ஜர் போர்டல். நோயாளியின் விவரங்களை உடனுக்குடன் அணுகவும், புதிய மருத்துவ விவரங்களை பதிவு செய்யவும்.",
+                "security-rule": "100% பாதுகாப்பான அனுமதி",
+                "security-rule-desc": "நோயாளி PIN சரிபார்ப்பு தேவைப்படும் நிரந்தர தணிக்கை பாதையில் ஒவ்வொரு அணுகலும் பதிவு செய்யப்படுகிறது.",
+                "sms-rule": "விருப்பத்தின் பேரில் மட்டுமே எஸ்எம்எஸ்",
+                "sms-rule-desc": "தானியங்கி செய்தி அனுப்பப்படாது. உங்கள் விருப்பத்தின் பேரில் மட்டுமே நோயாளிக்கு எஸ்எம்எஸ் அனுப்பப்படும்.",
+                "recent-patients": "சமீபத்திய நோயாளிகள்",
+                "demo-click": "டெமோ விவரங்கள்",
+                "scanning-camera": "ஆதார் QR ஸ்கேன் செய்யப்படுகிறது...",
+                "hold-card": "அட்டையை கேமரா சட்டத்திற்குள் வைக்கவும்.",
+                "step-1": "படி 1 - பாதுகாப்பான அங்கீகாரம்",
+                "search-desc": "நோயாளியின் சுகாதார லெட்ஜரைத் திறக்கவும்",
+                "scan-aadhaar-btn": "📷 ஆதார் அட்டையை ஸ்கேன் செய்க",
+                "scan-subtext": "பாதுகாப்பான உள்ளூர் OCR தொழில்நுட்பம் மூலம் விவரங்களை உடனுக்குடன் பெறுகிறது.",
+                "or": "அல்லது கைமுறை உள்ளீடு",
+                "enter-id": "ஆதார் ஐடி உள்ளிடவும்",
+                "patient-pin": "நோயாளி PIN",
+                "access-btn": "லெட்ஜரை அணுகவும்",
+                "active-ledger": "செயலில் உள்ள லெட்ஜர்",
+                "mob-masked": "மொபைல் எண்:",
+                "abha": "ABHA அட்டை ஐடி:",
+                "last-visit": "கடந்த வருகை தேதி:",
+                "nav-title": "தணிக்கை பதிவு",
+                "quick-tip": "மதிப்பீட்டாளர் குறிப்பு",
+                "tip-text": "மேல் வலது மூலையில் உங்கள் பணியை (மருத்துவர் / செவிலியர்) எப்போது வேண்டுமானாலும் மாற்றிக் கொள்ளலாம்.",
+                "chat-header": "அதிகாரப்பூர்வ மருத்துவ நிகழ்வு வரலாறு",
+                "entry-type": "நிகழ்வு வகை",
+                "free-text": "விவரங்களை எழுதவும்",
+                "drawer-title": "நோயாளி சுயவிவரத் தகவல்"
+            },
+            hi: {
+                "acting-as": "भूमिका:",
+                "exit": "रिकॉर्ड से बाहर निकलें",
+                "auth-title": "जे.ए.पी स्वास्थ्य पोर्टल",
+                "auth-desc": "सुरक्षित, तुरंत ऑडिट करने योग्य और पूरी तरह से पेपरलेस हेल्थ लेजर पोर्टल। रोगी के इतिहास को पुनः प्राप्त करें, और आवश्यक एसएमएस अपडेट भेजें।",
+                "security-rule": "100% सुरक्षित सहमति",
+                "security-rule-desc": "हर लेजर एक्सेस को रोगी पिन सत्यापन की आवश्यकता वाले सहमति पथ में दर्ज किया जाता है।",
+                "sms-rule": "केवल आपके आदेश पर एसएमएस",
+                "sms-rule-desc": "कोई स्वचालित संदेश नहीं भेजा जाता है। केवल अधिकृत करने पर ही रोगी को एसएमएस जाता है।",
+                "recent-patients": "हाल के सक्रिय रोगी",
+                "demo-click": "त्वरित डेमो",
+                "scanning-camera": "आधार क्यूआर स्कैन किया जा रहा है...",
+                "hold-card": "कार्ड को कैमरे के फ्रेम के अंदर रखें।",
+                "step-1": "चरण 1 - सुरक्षित प्रमाणीकरण",
+                "search-desc": "रोगी का डिजिटल स्वास्थ्य बहीखाता खोलें",
+                "scan-aadhaar-btn": "📷 आधार कार्ड स्कैन करें",
+                "scan-subtext": "स्थानीय ओसीआर के माध्यम से तुरंत सुरक्षा टोकन और विवरण निकालें।",
+                "or": "या मैन्युअल प्रविष्टि करें",
+                "enter-id": "आधार आईडी दर्ज करें",
+                "patient-pin": "रोगी का पिन",
+                "access-btn": "स्वास्थ्य रिकॉर्ड खोलें",
+                "active-ledger": "सक्रिय बहीखाता",
+                "mob-masked": "नकाबपोश मोबाइल:",
+                "abha": "ABHA कार्ड आईडी:",
+                "last-visit": "पिछली यात्रा की तारीख:",
+                "nav-title": "ऑडिट लॉग सिस्टम",
+                "quick-tip": "समीक्षक के लिए सलाह",
+                "tip-text": "आप ऊपर दाईं ओर क्लिक करके किसी भी समय डॉक्टर, नर्स या लैब तकनीशियन बन सकते हैं।",
+                "chat-header": "आधिकारिक चिकित्सा इतिहास",
+                "entry-type": "इवेंट का प्रकार",
+                "free-text": "विवरण लिखें",
+                "drawer-title": "रोगी प्रोफ़ाइल जानकारी"
+            }
+        };
+
+        // CLINICIAN PROVIDERS DATABASE
+        const providers = {
+            doctor: {
+                name: "Dr. Rajesh Kumar",
+                role: "Doctor",
+                qualification: "MD, General Medicine",
+                idField: "Reg No: BMC-98271",
+                facility: "Government PHC, Madurai"
+            },
+            nurse: {
+                name: "Nurse Lakshmi",
+                role: "Nurse",
+                qualification: "B.Sc Nursing, GNM",
+                idField: "Emp ID: N-4412",
+                facility: "Government PHC, Madurai"
+            },
+            lab: {
+                name: "Priya Devi",
+                role: "Lab Technician",
+                qualification: "DMLT, Lab Head",
+                idField: "Emp ID: LT-902",
+                facility: "Madurai Central Diagnostics"
+            }
+        };
+
+        // MOCK PATIENTS DATABASE
+        const patientsDB = [
+            {
+                name: "Priya Sharma",
+                age: "34",
+                gender: "Female",
+                bloodGroup: "O+",
+                maskedMobile: "XXXXXX7840",
+                abhaId: "91-2384-9281-02",
+                lastVisit: "12-May-2026",
+                dob: "14-Sep-1992",
+                address: "Flat 4B, Nehru Nagar Main Road, Madurai, Tamil Nadu - 625001",
+                allergies: ["Penicillin", "Sulfa Drugs"],
+                chronicConditions: ["Thyroid Disorder (Mild)"],
+                currentMeds: ["Thyronorm 50 mcg (Daily, Empty stomach)", "Multi-vitamins (Nightly)"],
+                previousSurgeries: "Appendectomy (2018)",
+                pin: "1212",
+                aadhaarMasked: "XXXX-XXXX-8901",
+                timeline: [
+                    {
+                        author: "Dr. Rajesh Kumar",
+                        role: "Doctor",
+                        facility: "Government PHC, Madurai",
+                        date: "12-May-2026, 11:30 AM",
+                        type: "Consultation",
+                        details: "Patient complains of mild fatigue and seasonal allergies. Advised to stay hydrated and complete multi-vitamin cycle.",
+                        signature: "E-SIGNED BY DR. RAJESH KUMAR (BMC-98271)"
+                    },
+                    {
+                        author: "Nurse Lakshmi",
+                        role: "Nurse",
+                        facility: "Government PHC, Madurai",
+                        date: "12-May-2026, 11:00 AM",
+                        type: "Vitals",
+                        details: "BP: 120/80 mmHg | Temp: 98.6 F | Pulse: 72 bpm | SpO2: 99%",
+                        signature: "RECORDED BY NURSE LAKSHMI (N-4412)"
+                    },
+                    {
+                        author: "Priya Devi",
+                        role: "Lab Technician",
+                        facility: "Madurai Central Diagnostics",
+                        date: "10-May-2026, 09:15 AM",
+                        type: "Lab Result",
+                        details: "Complete Blood Count: Hemoglobin 12.8 g/dL (Normal). TSH: 3.2 mIU/L (Within therapeutic control).",
+                        signature: "VERIFIED BY PRIYA DEVI (LT-902)"
+                    }
+                ]
+            },
+            {
+                name: "Muthu Karuppan",
+                age: "62",
+                gender: "Male",
+                bloodGroup: "A+",
+                maskedMobile: "XXXXXX2109",
+                abhaId: "12-4455-8899-00",
+                lastVisit: "05-Jun-2026",
+                dob: "01-Jan-1964",
+                address: "Street No. 4, Vadipatti Village, Madurai District, Tamil Nadu - 625218",
+                allergies: ["Aspirin"],
+                chronicConditions: ["Type 2 Diabetes", "Hypertension"],
+                currentMeds: ["Metformin 500 mg (Twice daily, after food)", "Telmisartan 40 mg (Once daily, morning)"],
+                previousSurgeries: "Cataract Surgery (Left Eye, 2024)",
+                pin: "3434",
+                aadhaarMasked: "XXXX-XXXX-5566",
+                timeline: [
+                    {
+                        author: "Dr. Rajesh Kumar",
+                        role: "Doctor",
+                        facility: "Government PHC, Madurai",
+                        date: "05-Jun-2026, 03:45 PM",
+                        type: "Consultation",
+                        details: "High glycemic indices observed. Metformin dose maintained, but advised strictly following diabetic diet and daily walking of 30 minutes.",
+                        signature: "E-SIGNED BY DR. RAJESH KUMAR (BMC-98271)"
+                    },
+                    {
+                        author: "Priya Devi",
+                        role: "Lab Technician",
+                        facility: "Madurai Central Diagnostics",
+                        date: "05-Jun-2026, 02:30 PM",
+                        type: "Lab Result",
+                        details: "Fasting Blood Sugar: 220 mg/dL | HbA1c: 8.1% (Uncontrolled). Immediate clinical consultation recommended.",
+                        signature: "VERIFIED BY PRIYA DEVI (LT-902)"
+                    }
+                ]
+            },
+            {
+                name: "Amit Patel",
+                age: "45",
+                gender: "Male",
+                bloodGroup: "B-",
+                maskedMobile: "XXXXXX1098",
+                abhaId: "33-2211-5544-66",
+                lastVisit: "22-May-2026",
+                dob: "15-Aug-1981",
+                address: "House 22, Shastri Colony, Madurai West - 625016",
+                allergies: ["Peanuts", "Dust Mites"],
+                chronicConditions: ["Bronchial Asthma"],
+                currentMeds: ["Budecort Inhaler (2 puffs as needed)", "Montelukast 10mg (Nightly)"],
+                previousSurgeries: "No history of surgeries",
+                pin: "5656",
+                aadhaarMasked: "XXXX-XXXX-1122",
+                timeline: [
+                    {
+                        author: "Dr. Rajesh Kumar",
+                        role: "Doctor",
+                        facility: "Government PHC, Madurai",
+                        date: "22-May-2026, 10:15 AM",
+                        type: "Consultation",
+                        details: "Asthma symptoms triggered by seasonal grain pollen. Prescribed short course of oral anti-histamines and continued inhaler regimen.",
+                        signature: "E-SIGNED BY DR. RAJESH KUMAR (BMC-98271)"
+                    }
+                ]
+            }
+        ];
+
+        // GLOBAL APPLICATION STATE
+        let activeLanguage = 'en';
+        let activeProvider = providers.doctor; // Default starting provider
+        let activePatient = null;
+        let selectedTimelineFilter = 'all';
+        let pinFailureCount = 0;
+        let activeSmsEntry = null;
+
+        // Trace Logs stored in session memory
+        const systemAuditLogs = [];
+        const systemConsentLogs = [];
+
+        // ONLOAD INITIALIZATION
+        window.onload = function() {
+            setLanguage('en');
+            changeProviderRole('doctor');
+            renderRecentPatients();
+            updateStatsCounts();
+        };
+
+        // MULTI-LANGUAGE CONTROLLER
+        function setLanguage(lang) {
+            activeLanguage = lang;
+            
+            // Toggle classes on active indicator button
+            ['en', 'ta', 'hi'].forEach(l => {
+                const btn = document.getElementById(`lang-${l}`);
+                if (l === lang) {
+                    btn.className = "px-2.5 py-1 rounded bg-white text-emerald-800 font-semibold transition";
+                } else {
+                    btn.className = "px-2.5 py-1 rounded text-emerald-200 hover:text-white transition";
+                }
+            });
+
+            // Translate all elements with data-i18n
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (i18n[lang] && i18n[lang][key]) {
+                    el.textContent = i18n[lang][key];
+                }
+            });
+        }
+
+        // PROVIDER SWITCHER
+        function changeProviderRole(roleKey) {
+            activeProvider = providers[roleKey];
+            
+            // Update UI composers references
+            document.getElementById('composerProviderName').textContent = `${activeProvider.name} (${activeProvider.qualification})`;
+            document.getElementById('composerProviderRole').textContent = activeProvider.role.toUpperCase();
+
+            // Auto select suitable dropdown value in form for quick testing
+            const selectEl = document.getElementById('entryType');
+            if (activeProvider.role === 'Doctor') {
+                selectEl.value = 'Consultation';
+            } else if (activeProvider.role === 'Nurse') {
+                selectEl.value = 'Vitals';
+            } else if (activeProvider.role === 'Lab Technician') {
+                selectEl.value = 'Lab Result';
+            }
+
+            logSessionEvent('System', `Role switched to ${activeProvider.name} (${activeProvider.role})`, 'N/A');
+        }
+
+        // RENDERING DEMO/RECENT ACTIVE PATIENTS LIST ON LOGIN PAGE
+        function renderRecentPatients() {
+            const container = document.getElementById('recentPatientsList');
+            container.innerHTML = '';
+
+            patientsDB.forEach(pat => {
+                const item = document.createElement('div');
+                item.className = "flex justify-between items-center bg-white p-2.5 rounded-lg border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/20 cursor-pointer transition";
+                item.onclick = () => {
+                    document.getElementById('aadhaarInput').value = pat.aadhaarMasked;
+                    document.getElementById('pinInput').value = pat.pin;
+                    showToast(`💡 Prefilled data for ${pat.name}!`);
+                };
+
+                item.innerHTML = `
+                    <div>
+                        <div class="text-xs font-bold text-slate-800">${pat.name} <span class="text-[10px] text-slate-500">(${pat.age}y, ${pat.gender})</span></div>
+                        <div class="text-[10px] text-slate-400 font-mono">Aadhaar: ${pat.aadhaarMasked}</div>
+                    </div>
+                    <div class="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded font-mono font-bold">PIN: ${pat.pin}</div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // POPUP NOTIFICATION (Replacement for native alert() in iframe environment)
+        function showToast(message, icon = "💡") {
+            const toast = document.getElementById('toastNotification');
+            const msgEl = document.getElementById('toastMessage');
+            const iconEl = document.getElementById('toastIcon');
+
+            iconEl.textContent = icon;
+            msgEl.textContent = message;
+
+            toast.classList.remove('hidden');
+            toast.classList.remove('translate-y-10');
+            toast.classList.add('translate-y-0');
+
+            // Hide after 3.5s
+            setTimeout(() => {
+                toast.classList.add('translate-y-10');
+                setTimeout(() => toast.classList.add('hidden'), 300);
+            }, 3500);
+        }
+
+        // SIMULATED CAMERA OCR METHOD
+        function triggerCameraScan() {
+            toggleCamera(true);
+            
+            // Auto complete scanning simulation after 3 seconds
+            setTimeout(() => {
+                toggleCamera(false);
+                // Choose a random patient from DB to fill
+                const randomPatient = patientsDB[Math.floor(Math.random() * patientsDB.length)];
+                
+                document.getElementById('aadhaarInput').value = randomPatient.aadhaarMasked;
+                document.getElementById('pinInput').value = randomPatient.pin;
+                
+                showToast(`✅ Aadhaar OCR Scanned: Patient ${randomPatient.name} identified!`, "📷");
+                logSessionEvent('System-Camera', 'Extracted OCR security metadata token from scanned Aadhaar card', randomPatient.aadhaarMasked);
+            }, 3000);
+        }
+
+        function toggleCamera(show) {
+            const overlay = document.getElementById('cameraOverlay');
+            if (show) {
+                overlay.classList.remove('hidden');
+            } else {
+                overlay.classList.add('hidden');
+            }
+        }
+
+        // AUTHENTICATION LOGIC (VERIFY PIN & IDENTIFIER)
+        function attemptAuthentication() {
+            const inputAadhaar = document.getElementById('aadhaarInput').value.trim();
+            const inputPin = document.getElementById('pinInput').value.trim();
+            const errorPanel = document.getElementById('authErrorPanel');
+            const errorMsg = document.getElementById('authErrorMsg');
+
+            errorPanel.classList.add('hidden');
+
+            // Find matching patient record
+            const patient = patientsDB.find(p => p.aadhaarMasked === inputAadhaar || p.aadhaarMasked.replace(/-/g,'') === inputAadhaar);
+
+            if (!patient) {
+                errorMsg.textContent = "Aadhaar Card Record Not Found in National Registry.";
+                errorPanel.classList.remove('hidden');
+                logConsentEvent(activeProvider.name, 'Aadhaar Token', 'Rejected (ID not found)');
+                return;
+            }
+
+            if (patient.pin !== inputPin) {
+                pinFailureCount++;
+                const attemptsLeft = 3 - pinFailureCount;
+                
+                logConsentEvent(activeProvider.name, 'PIN verification', `Failed (Incorrect entry)`);
+
+                if (attemptsLeft <= 0) {
+                    document.getElementById('lockoutCover').classList.remove('hidden');
+                    return;
+                }
+
+                errorMsg.textContent = `Incorrect Secure PIN. Attempts remaining: ${attemptsLeft}`;
+                errorPanel.classList.remove('hidden');
+                document.getElementById('pinAttemptsWarning').textContent = `* ${attemptsLeft} attempts left`;
+                return;
+            }
+
+            // SUCCESSFUL AUTHENTICATION
+            activePatient = JSON.parse(JSON.stringify(patient)); // Deep copy to prevent mutating static DB unless session runs
+            pinFailureCount = 0; // Reset attempts
+            document.getElementById('pinAttemptsWarning').textContent = "";
+
+            logConsentEvent(activeProvider.name, 'Verified PIN', 'AUTHORIZED');
+            logSessionEvent(activeProvider.name, `Accessed full health ledger database securely`, activePatient.aadhaarMasked);
+
+            // Navigate to Screen 3 (Timeline)
+            showPatientTimelineScreen();
+        }
+
+        // DISPLAY TIMELINE PANEL METHOD
+        function showPatientTimelineScreen() {
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('patientTimelineSection').classList.remove('hidden');
+            document.getElementById('logoutBtn').classList.remove('hidden');
+
+            // Populate header profile labels
+            document.getElementById('patientName').textContent = activePatient.name;
+            document.getElementById('patientAgeGender').textContent = `${activePatient.age} Yrs • ${activePatient.gender}`;
+            document.getElementById('patientBloodGroup').textContent = activePatient.bloodGroup;
+            document.getElementById('patientMobile').textContent = activePatient.maskedMobile;
+            document.getElementById('patientABHA').textContent = activePatient.abhaId || "Not Registered";
+            document.getElementById('patientLastVisit').textContent = activePatient.lastVisit;
+
+            // Render Timeline Records
+            renderTimelineEvents();
+            updateStatsCounts();
+            
+            showToast(`🔓 Ledger Opened for ${activePatient.name}. Complete access logs generated.`, "🛡️");
+        }
+
+        // LOG OUT SESSION
+        function exitPatientSession() {
+            logSessionEvent(activeProvider.name, 'Closed health ledger and destroyed temporary session keys', activePatient ? activePatient.aadhaarMasked : 'N/A');
+            
+            activePatient = null;
+            document.getElementById('aadhaarInput').value = '';
+            document.getElementById('pinInput').value = '';
+            
+            document.getElementById('patientTimelineSection').classList.add('hidden');
+            document.getElementById('authSection').classList.remove('hidden');
+            document.getElementById('logoutBtn').classList.add('hidden');
+
+            showToast("🔒 Secure session cleared. No cached copies preserved.", "🔐");
+        }
+
+        // RENDER CHAT INTERFACE EVENT STREAM
+        function renderTimelineEvents() {
+            const container = document.getElementById('timelineContainer');
+            container.innerHTML = '';
+
+            // Filter chronological sequence
+            let events = activePatient.timeline;
+            if (selectedTimelineFilter !== 'all') {
+                events = events.filter(e => e.role === selectedTimelineFilter);
+            }
+
+            if (events.length === 0) {
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center p-8 text-center text-slate-500 bg-white rounded-xl border border-dashed border-slate-300">
+                        <span class="text-3xl mb-1">💬</span>
+                        <h4 class="font-bold text-slate-700">No events match search filter</h4>
+                        <p class="text-xs">Select "All" to view the complete unified health record history.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            events.forEach((evt, idx) => {
+                const bubble = document.createElement('div');
+                
+                // Color configuration depending on who recorded
+                let badgeColor = "bg-emerald-500";
+                let borderColor = "border-slate-200";
+                let bgColor = "bg-white";
+                let icon = "📝";
+
+                if (evt.role === 'Doctor') {
+                    badgeColor = "bg-sky-600";
+                    bgColor = "bg-sky-50/40";
+                    borderColor = "border-sky-100";
+                    icon = "🩺";
+                } else if (evt.role === 'Nurse') {
+                    badgeColor = "bg-purple-600";
+                    bgColor = "bg-purple-50/40";
+                    borderColor = "border-purple-100";
+                    icon = "👩‍⚕️";
+                } else if (evt.role === 'Lab Technician') {
+                    badgeColor = "bg-amber-600";
+                    bgColor = "bg-amber-50/40";
+                    borderColor = "border-amber-100";
+                    icon = "🧪";
+                }
+
+                bubble.className = `p-4 rounded-2xl rounded-tl-none border ${borderColor} ${bgColor} shadow-sm max-w-[85%] relative group transition-all hover:shadow-md`;
+                bubble.innerHTML = `
+                    <!-- Header -->
+                    <div class="flex justify-between items-start gap-4 mb-2">
+                        <div>
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <span class="text-xs font-bold text-slate-800">${icon} ${evt.author}</span>
+                                <span class="text-[9px] ${badgeColor} text-white font-bold px-1.5 py-0.25 rounded-full uppercase">${evt.role}</span>
+                            </div>
+                            <span class="text-[10px] text-slate-400 block mt-0.5">${evt.facility} • ${evt.date}</span>
+                        </div>
+                    </div>
+
+                    <!-- Medical Body -->
+                    <div class="text-xs text-slate-700 leading-relaxed font-sans mb-3 font-medium bg-white/70 p-2.5 rounded-lg border border-slate-100">
+                        ${evt.details}
+                    </div>
+
+                    <!-- Footer Digital Integrity Stamp & Explicit SMS Dispatch Trigger -->
+                    <div class="flex justify-between items-center gap-2 pt-2 border-t border-slate-100 flex-wrap">
+                        <span class="text-[9px] text-slate-400 font-mono tracking-tighter flex items-center gap-1">
+                            <span>🔑</span> <span>${evt.signature}</span>
+                        </span>
+                        
+                        <!-- SMS DISPATCH ACTION TRIGGER (EXPLICIT ON CLICK) -->
+                        <button onclick="triggerSMSConfirmationModal(${idx})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] px-2.5 py-1 rounded transition flex items-center gap-1 shadow-sm">
+                            <span>📨</span>
+                            <span data-i18n="sms-trigger">Trigger SMS</span>
+                        </button>
+                    </div>
+                `;
+
+                container.appendChild(bubble);
+            });
+        }
+
+        // NEW LEDGER ENTRY COMPOSER SUBMIT HANDLER
+        function handleNewEntrySubmit(event) {
+            event.preventDefault();
+            
+            const entryTextVal = document.getElementById('entryText').value.trim();
+            const entryTypeVal = document.getElementById('entryType').value;
+
+            if (!entryTextVal) return;
+
+            const currentDate = new Date();
+            const formattedDate = currentDate.toLocaleString('en-US', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+
+            // Generate signature hash
+            const mockHash = `JAP-STAMP-${Math.floor(1000 + Math.random() * 9000)}`;
+            const digitalSig = `${activeProvider.role === 'Doctor' ? 'E-SIGNED BY' : 'RECORDED BY'} ${activeProvider.name.toUpperCase()} (${activeProvider.idField.toUpperCase()})`;
+
+            // Create record structure matching provider role specifications
+            const newRecord = {
+                author: activeProvider.name,
+                role: activeProvider.role,
+                facility: activeProvider.facility,
+                date: formattedDate,
+                type: entryTypeVal,
+                details: entryTextVal,
+                signature: digitalSig
+            };
+
+            // Prepend new record to patient timeline
+            activePatient.timeline.unshift(newRecord);
+
+            // Reset UI Input field
+            document.getElementById('entryText').value = '';
+
+            // Add to system Audit Trace logs (Cannot be deleted or modified)
+            logSessionEvent(activeProvider.name, `Composed new clinical health ledger entry [${entryTypeVal}]`, activePatient.aadhaarMasked);
+
+            // Re-render
+            renderTimelineEvents();
+            updateStatsCounts();
+
+            showToast(`📝 Saved directly to Cloud Ledger successfully. SMS is NOT sent automatically.`, "💾");
+        }
+
+        // SMS MODAL EXPLICIT TRIGGERING SYSTEM
+        function triggerSMSConfirmationModal(timelineIdx) {
+            const entry = activePatient.timeline[timelineIdx];
+            activeSmsEntry = entry;
+
+            // Generate precise limited SMS payload preview as received by patient
+            const previewText = `
+JAP Alert
+Facility: ${entry.facility}
+Provider: ${entry.author} (${entry.role})
+Details: ${entry.details.length > 100 ? entry.details.substring(0, 97) + '...' : entry.details}
+Timestamp: ${entry.date}
+            `.trim();
+
+            document.getElementById('smsPreviewPayload').textContent = previewText;
+            toggleSMSModal(true);
+        }
+
+        function toggleSMSModal(show) {
+            const modal = document.getElementById('smsConfirmationModal');
+            if (show) {
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        // CONFIRM SENT AND GENERATE HIGH FIDELITY POPUP RECEIPT
+        function confirmAndSendSMS() {
+            toggleSMSModal(false);
+
+            if (!activeSmsEntry) return;
+
+            const entry = activeSmsEntry;
+            const fullSmsText = `[JAP Health System]
+Dr/Staff: ${entry.author}
+Org: ${entry.facility}
+Ref Details: ${entry.details}
+Date: ${entry.date}
+View Ledger: health.jap.gov.in`;
+
+            // Display on mock cellphone interface
+            document.getElementById('smsMobileBody').textContent = fullSmsText;
+            toggleMobileSMSPopup(true);
+
+            // Log event in secure logs
+            logSessionEvent(activeProvider.name, `SMS text alert dispatched to phone ${activePatient.maskedMobile}`, activePatient.aadhaarMasked);
+
+            showToast(`📲 SMS triggered and queued for delivery.`, "⚡");
+        }
+
+        function toggleMobileSMSPopup(show) {
+            const popup = document.getElementById('mobileSMSPopup');
+            if (show) {
+                popup.classList.remove('hidden');
+                // Auto play slight sound/vibration aesthetic or automatically hide after some seconds
+            } else {
+                popup.classList.add('hidden');
+            }
+        }
+
+        // FILTER EVENT CHIPS
+        function filterTimeline(role) {
+            selectedTimelineFilter = role;
+
+            // Toggle visual styling
+            const btnAll = document.getElementById('filter-all');
+            const btnDoc = document.getElementById('filter-doc');
+            const btnNurse = document.getElementById('filter-nurse');
+            const btnLab = document.getElementById('filter-lab');
+
+            [btnAll, btnDoc, btnNurse, btnLab].forEach(btn => {
+                btn.className = "px-2.5 py-1 rounded-full text-slate-500 hover:bg-slate-100 transition";
+            });
+
+            if (role === 'all') btnAll.className = "px-2.5 py-1 rounded-full bg-slate-200 font-bold text-slate-700 transition";
+            if (role === 'Doctor') btnDoc.className = "px-2.5 py-1 rounded-full bg-sky-100 font-bold text-sky-800 transition";
+            if (role === 'Nurse') btnNurse.className = "px-2.5 py-1 rounded-full bg-purple-100 font-bold text-purple-800 transition";
+            if (role === 'Lab Technician') btnLab.className = "px-2.5 py-1 rounded-full bg-amber-100 font-bold text-amber-800 transition";
+
+            renderTimelineEvents();
+        }
+
+        // DRAWER CONTROLLER
+        function toggleDetailsDrawer(show) {
+            const drawer = document.getElementById('detailsDrawer');
+            if (show) {
+                drawer.classList.remove('hidden');
+                populateDrawerData();
+            } else {
+                drawer.classList.add('hidden');
+            }
+        }
+
+        function populateDrawerData() {
+            if (!activePatient) return;
+
+            document.getElementById('drawerDOB').textContent = activePatient.dob;
+            document.getElementById('drawerGender').textContent = activePatient.gender;
+            document.getElementById('drawerAddress').textContent = activePatient.address;
+            document.getElementById('drawerBloodGroup').textContent = activePatient.bloodGroup;
+            document.getElementById('drawerSurgeries').textContent = activePatient.previousSurgeries;
+
+            // Fill Allergies
+            const allergyDiv = document.getElementById('drawerAllergies');
+            allergyDiv.innerHTML = '';
+            if (activePatient.allergies.length > 0) {
+                activePatient.allergies.forEach(all => {
+                    const pill = document.createElement('span');
+                    pill.className = "bg-rose-50 border border-rose-200 text-rose-800 font-semibold text-[10px] px-2 py-0.5 rounded";
+                    pill.textContent = all;
+                    allergyDiv.appendChild(pill);
+                });
+            } else {
+                allergyDiv.innerHTML = `<span class="text-slate-400 italic text-[11px]">No known allergies reported</span>`;
+            }
+
+            // Fill Chronic conditions
+            const chronicDiv = document.getElementById('drawerChronics');
+            chronicDiv.innerHTML = '';
+            if (activePatient.chronicConditions.length > 0) {
+                activePatient.chronicConditions.forEach(cond => {
+                    const pill = document.createElement('span');
+                    pill.className = "bg-amber-50 border border-amber-200 text-amber-800 font-semibold text-[10px] px-2 py-0.5 rounded";
+                    pill.textContent = cond;
+                    chronicDiv.appendChild(pill);
+                });
+            } else {
+                chronicDiv.innerHTML = `<span class="text-slate-400 italic text-[11px]">No known chronic conditions</span>`;
+            }
+
+            // Fill Medications list
+            const medsUl = document.getElementById('drawerMeds');
+            medsUl.innerHTML = '';
+            if (activePatient.currentMeds.length > 0) {
+                activePatient.currentMeds.forEach(med => {
+                    const li = document.createElement('li');
+                    li.className = "font-medium text-slate-700";
+                    li.textContent = med;
+                    medsUl.appendChild(li);
+                });
+            } else {
+                medsUl.innerHTML = `<span class="text-slate-400 italic text-[11px]">No active medical prescription found</span>`;
+            }
+        }
+
+        // TAB NAVIGATION WITH BADGES
+        function openTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(cont => cont.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "tab-btn w-full text-left py-2 px-3 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 flex items-center justify-between";
+            });
+
+            document.getElementById(`tabContent-${tabId}`).classList.remove('hidden');
+            
+            const activeBtn = document.getElementById(`tabBtn-${tabId}`);
+            activeBtn.className = "tab-btn w-full text-left py-2 px-3 rounded-lg text-sm font-semibold flex items-center justify-between bg-emerald-50 text-emerald-800";
+        }
+
+        // RE-SET SECURITY SUSPENSION LIMITS
+        function resetSecurityLockout() {
+            pinFailureCount = 0;
+            document.getElementById('lockoutCover').classList.add('hidden');
+            document.getElementById('pinAttemptsWarning').textContent = "";
+            showToast("🔒 Security systems authorized and reset completed successfully.", "🛡️");
+        }
+
+        // LIVE TRACE LOG GATHERING METHODS
+        function logSessionEvent(provider, action, idToken) {
+            const stamp = new Date().toLocaleTimeString();
+            systemAuditLogs.unshift({
+                time: stamp,
+                provider: provider,
+                action: action,
+                id: idToken
+            });
+            renderAuditTable();
+        }
+
+        function logConsentEvent(clinician, tokenType, status) {
+            const stamp = new Date().toLocaleTimeString();
+            systemConsentLogs.unshift({
+                time: stamp,
+                clinician: clinician,
+                tokenType: tokenType,
+                status: status
+            });
+            renderConsentTable();
+        }
+
+        function renderAuditTable() {
+            const body = document.getElementById('auditTrailBody');
+            body.innerHTML = '';
+            systemAuditLogs.forEach(log => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50";
+                tr.innerHTML = `
+                    <td class="p-2.5 font-mono text-slate-500">${log.time}</td>
+                    <td class="p-2.5 font-semibold text-slate-700">${log.provider}</td>
+                    <td class="p-2.5 text-slate-600 font-sans">${log.action}</td>
+                    <td class="p-2.5 font-mono font-bold text-slate-800">${log.id}</td>
+                `;
+                body.appendChild(tr);
+            });
+            updateStatsCounts();
+        }
+
+        function renderConsentTable() {
+            const body = document.getElementById('consentTrailBody');
+            body.innerHTML = '';
+            systemConsentLogs.forEach(log => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50";
+                
+                const statusBadge = log.status === 'AUTHORIZED' 
+                    ? `<span class="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded text-[10px]">✅ AUTHORIZED</span>`
+                    : `<span class="bg-rose-100 text-rose-800 font-bold px-2 py-0.5 rounded text-[10px]">❌ REJECTED</span>`;
+
+                tr.innerHTML = `
+                    <td class="p-2.5 font-mono text-slate-500">${log.time}</td>
+                    <td class="p-2.5 font-semibold text-slate-700">${log.clinician}</td>
+                    <td class="p-2.5 font-sans font-medium text-slate-600">${log.tokenType}</td>
+                    <td class="p-2.5">${statusBadge}</td>
+                `;
+                body.appendChild(tr);
+            });
+            updateStatsCounts();
+        }
+
+        function updateStatsCounts() {
+            const countTimeline = activePatient ? activePatient.timeline.length : 0;
+            document.getElementById('timelineCount').textContent = countTimeline;
+            document.getElementById('auditCount').textContent = systemAuditLogs.length;
+            document.getElementById('consentCount').textContent = systemConsentLogs.length;
+        }
+    </script>
+</body>
+</html>
